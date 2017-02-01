@@ -6,6 +6,8 @@
 background color to something easily recognizable, so you know which
 server you're about to hose.
 
+![See it in action](https://github.com/akx/sshw/raw/gif/sshw.gif)
+
 Support
 -------
 
