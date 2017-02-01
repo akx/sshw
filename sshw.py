@@ -65,6 +65,8 @@ def main(argv):
     if changed:
         try:
             return os.spawnvp(os.P_WAIT, 'ssh', argv)
+        except KeyboardInterrupt:
+            pass
         finally:
             set_bg_color(default_color)
     else:
