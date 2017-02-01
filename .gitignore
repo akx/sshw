@@ -1,0 +1,4 @@
+*.py[oc]
+.cache
+.coverage
+htmlcov
