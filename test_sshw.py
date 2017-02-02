@@ -2,23 +2,26 @@ import pytest
 
 import sshw
 
+class MockColorInterface(sshw.ColorInterface):
+    def __init__(self):
+        self.expected_colors = []
+
+    def set_bg_color(self, rgb):
+        expected_color = self.expected_colors.pop(0)
+        assert tuple(rgb) == tuple(expected_color)
+
 
 @pytest.fixture()
 def p(monkeypatch):
-
-    expected_colors = []
-
-    def mock_set_bg_color(rgb):
-        expected_color = expected_colors.pop(0)
-        assert tuple(rgb) == tuple(expected_color)
+    ci = MockColorInterface()
 
     def mock_spawn_or_exec(*args):
         return 0
 
-    monkeypatch.setattr(sshw, 'set_bg_color', mock_set_bg_color)
+    monkeypatch.setattr(sshw, 'color_interface', ci)
     monkeypatch.setattr(sshw.os, 'spawnvp', mock_spawn_or_exec)
     monkeypatch.setattr(sshw.os, 'execvp', mock_spawn_or_exec)
-    monkeypatch.expected_colors = expected_colors
+    monkeypatch.expected_colors = ci.expected_colors
     return monkeypatch
 
 

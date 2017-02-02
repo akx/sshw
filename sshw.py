@@ -15,8 +15,16 @@ def parse_color(color):
     raise ValueError('unable to parse color %s; try r,g,b or #FFFFFF' % color)
 
 
-def set_bg_color(rgb):
-    if os.environ.get('TERM_PROGRAM') == 'iTerm.app':
+class ColorInterface:
+    def set_bg_color(self, rgb):
+        pass
+
+    def restore_bg_color(self):
+        self.set_bg_color(default_color)
+
+
+class ITermColorInterface(ColorInterface):
+    def set_bg_color(self, rgb):
         r, g, b = rgb
         os.write(1, b'\033]Ph%02x%02x%02x\033\\' % (r, g, b))
 
@@ -34,10 +42,14 @@ def find_hostmap_match(user_host):
             if any((m == m_host or re.match(m_host, m)) for m in (host, user_host)):
                 return parse_color(color)
 
+
+color_interface_class = ColorInterface
+if os.environ.get('TERM_PROGRAM') == 'iTerm.app':
+    color_interface_class = ITermColorInterface
 is_tty = bool(os.isatty(1))
 default_color = parse_color(os.environ.get('SSHW_DEFAULT_BG') or '25,25,25')
 hostmap_file = os.path.expanduser(os.path.expandvars(os.environ.get('SSHW_HOSTMAP') or '~/.sshw_hosts'))
-
+color_interface = color_interface_class()
 
 def main(argv):
     changed = False
@@ -51,6 +63,8 @@ def main(argv):
         if user_host:
             break
 
+
+
     if is_tty and user_host:
         rgb = find_hostmap_match(user_host)
         if not rgb:
@@ -58,7 +72,7 @@ def main(argv):
             host_hash = hashlib.sha1(host.encode('ascii')).digest()
             hue = host_hash[0] / 255.
             rgb = [int(c * 255) for c in colorsys.hsv_to_rgb(hue, 0.7, 0.2)]
-        set_bg_color(rgb)
+        color_interface.set_bg_color(rgb)
         changed = True
 
     if changed:
@@ -67,7 +81,7 @@ def main(argv):
         except KeyboardInterrupt:
             pass
         finally:
-            set_bg_color(default_color)
+            color_interface.restore_bg_color()
     else:
         # if the colors weren't changed at all, we can just exec --
         # no need to attempt to restore the color -- and save some
