@@ -16,8 +16,6 @@ def parse_color(color):
 
 
 def set_bg_color(rgb):
-    if not os.isatty(1):  # if stdout is not a tty, don't even attempt to change colors
-        return
     if os.environ.get('TERM_PROGRAM') == 'iTerm.app':
         r, g, b = rgb
         os.write(1, b'\033]Ph%02x%02x%02x\033\\' % (r, g, b))
@@ -36,6 +34,7 @@ def find_hostmap_match(user_host):
             if any((m == m_host or re.match(m_host, m)) for m in (host, user_host)):
                 return parse_color(color)
 
+is_tty = bool(os.isatty(1))
 default_color = parse_color(os.environ.get('SSHW_DEFAULT_BG') or '25,25,25')
 hostmap_file = os.path.expanduser(os.path.expandvars(os.environ.get('SSHW_HOSTMAP') or '~/.sshw_hosts'))
 
@@ -52,7 +51,7 @@ def main(argv):
         if user_host:
             break
 
-    if user_host:
+    if is_tty and user_host:
         rgb = find_hostmap_match(user_host)
         if not rgb:
             user, host = user_host.groups()
