@@ -1,8 +1,12 @@
+from collections import defaultdict
+
 import pytest
 
 import sshw
 
+
 class MockColorInterface(sshw.ColorInterface):
+
     def __init__(self):
         self.expected_colors = []
 
@@ -14,14 +18,20 @@ class MockColorInterface(sshw.ColorInterface):
 @pytest.fixture()
 def p(monkeypatch):
     ci = MockColorInterface()
+    writes = defaultdict(list)
 
     def mock_spawn_or_exec(*args):
         return 0
 
+    def mock_write(fd, text):
+        writes[fd].append(text)
+
     monkeypatch.setattr(sshw, 'color_interface', ci)
     monkeypatch.setattr(sshw.os, 'spawnvp', mock_spawn_or_exec)
     monkeypatch.setattr(sshw.os, 'execvp', mock_spawn_or_exec)
+    monkeypatch.setattr(sshw.os, 'write', mock_write)
     monkeypatch.expected_colors = ci.expected_colors
+    monkeypatch.writes = writes
     return monkeypatch
 
 
@@ -44,3 +54,9 @@ def test_auto_color(p, tmpdir):
     p.expected_colors.append((18, 15, 51))
     p.expected_colors.append(sshw.default_color)
     sshw.main(['ssh', 'foo@quux'])
+
+
+def test_iterm_chrome(p):
+    p.setattr(sshw, 'color_interface', sshw.ITermColorInterface())
+    sshw.color_interface.set_chrome_color((80, 80, 80))
+    assert all(b'255' in write for write in p.writes[1])  # should be bright white

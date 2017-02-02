@@ -16,17 +16,42 @@ def parse_color(color):
 
 
 class ColorInterface:
-    def set_bg_color(self, rgb):
+
+    def set_bg_color(self, rgb):  # pragma: no cover
+        pass
+
+    def set_chrome_color(self, rgb):
         pass
 
     def restore_bg_color(self):
         self.set_bg_color(default_color)
 
+    def restore_chrome_color(self):
+        pass
+
 
 class ITermColorInterface(ColorInterface):
+
     def set_bg_color(self, rgb):
         r, g, b = rgb
         os.write(1, b'\033]Ph%02x%02x%02x\033\\' % (r, g, b))
+
+    def set_chrome_color(self, rgb):
+        # iTerm can only change the background color of tab chrome,
+        # and if that's done, the foreground will be black,
+        # so we adjust the passed-in color for better legibility.
+        # (See executeXtermProprietaryExtermExtension in iTerm's source.)
+
+        h, s, v = colorsys.rgb_to_hsv(rgb[0] / 255, rgb[1] / 255, rgb[2] / 255)
+        s *= 0.8
+        v = 1
+        r, g, b = [int(c * 255) for c in colorsys.hsv_to_rgb(h, s, v)]
+        os.write(1, b'\033]6;1;bg;red;brightness;%d\a' % r)
+        os.write(1, b'\033]6;1;bg;green;brightness;%d\a' % g)
+        os.write(1, b'\033]6;1;bg;blue;brightness;%d\a' % b)
+
+    def restore_chrome_color(self):
+        os.write(1, b'\033]6;1;bg;*;default\a')
 
 
 def find_hostmap_match(user_host):
@@ -49,7 +74,9 @@ if os.environ.get('TERM_PROGRAM') == 'iTerm.app':
 is_tty = bool(os.isatty(1))
 default_color = parse_color(os.environ.get('SSHW_DEFAULT_BG') or '25,25,25')
 hostmap_file = os.path.expanduser(os.path.expandvars(os.environ.get('SSHW_HOSTMAP') or '~/.sshw_hosts'))
+set_chrome = (str(os.environ.get('SSHW_CHROME', '1')).lower() in ('1', 'true', 'yes'))
 color_interface = color_interface_class()
+
 
 def main(argv):
     changed = False
@@ -63,8 +90,6 @@ def main(argv):
         if user_host:
             break
 
-
-
     if is_tty and user_host:
         rgb = find_hostmap_match(user_host)
         if not rgb:
@@ -73,6 +98,8 @@ def main(argv):
             hue = host_hash[0] / 255.
             rgb = [int(c * 255) for c in colorsys.hsv_to_rgb(hue, 0.7, 0.2)]
         color_interface.set_bg_color(rgb)
+        if set_chrome:
+            color_interface.set_chrome_color(rgb)
         changed = True
 
     if changed:
@@ -82,11 +109,14 @@ def main(argv):
             pass
         finally:
             color_interface.restore_bg_color()
+            if set_chrome:
+                color_interface.restore_chrome_color()
     else:
         # if the colors weren't changed at all, we can just exec --
         # no need to attempt to restore the color -- and save some
         # memory and process table space. (as if that's at a premium.)
         return os.execvp('ssh', argv)
+
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))

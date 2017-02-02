@@ -41,6 +41,8 @@ There are some environment variables `sshw` knows, though:
   `#RRGGBB`.  Defaults to `25,25,25`.
 * `SSHW_HOSTMAP`: the path to the SSHW hostmap file; defaults to `~/.sshw_hosts`.
   See below for more information about the hostmap.
+* `SSHW_CHROME`: whether or not to set chrome (tab for iTerm) colors.  Defaults
+  to yes; feel free to set to anything but "1", "true", or "yes" to disable this.
 
 Hostmap
 -------
