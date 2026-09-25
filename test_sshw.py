@@ -60,3 +60,10 @@ def test_iterm_chrome(p):
     p.setattr(sshw, 'color_interface', sshw.ITermColorInterface())
     sshw.color_interface.set_chrome_color((80, 80, 80))
     assert all(b'255' in write for write in p.writes[1])  # should be bright white
+
+
+def test_ghostty(p):
+    ci = sshw.GhosttyColorInterface()
+    ci.set_bg_color((18, 15, 51))
+    ci.restore_bg_color()
+    assert p.writes[1] == [b'\033]11;rgb:12/0f/33\033\\', b'\033]111\033\\']

@@ -11,8 +11,13 @@ server you're about to hose.
 Support
 -------
 
-Currently `sshw` *only supports* [iTerm][iterm-ec]'s proprietary escape
-codes.  Pull requests are more than welcome!
+`sshw` currently supports:
+
+* [iTerm][iterm-ec]'s proprietary escape codes (background and tab color)
+* [Ghostty][ghostty-ec], using the standard xterm `OSC 11`/`OSC 111` sequences.
+* The original background is restored on exit, so `SSHW_DEFAULT_BG` is not used.
+
+Pull requests are more than welcome!
 
 Installation
 ------------
@@ -38,7 +43,7 @@ There are some environment variables `sshw` knows, though:
   Currently there is no way of knowing what the original palette was before
   messing about with it, so this is used to restore the non-ssh-y color.
   This can be either an integer `rrr,ggg,bbb` triple or a web hex triplet like
-  `#RRGGBB`.  Defaults to `25,25,25`.
+  `#RRGGBB`.  Defaults to `25,25,25`. (iTerm only)
 * `SSHW_HOSTMAP`: the path to the SSHW hostmap file; defaults to `~/.sshw_hosts`.
   See below for more information about the hostmap.
 * `SSHW_CHROME`: whether or not to set chrome (tab for iTerm) colors.  Defaults
@@ -69,3 +74,4 @@ Development
 Run tests with `py.test`.
 
 [iterm-ec]: https://www.iterm2.com/documentation-escape-codes.html
+[ghostty-ec]: https://ghostty.org/docs/vt/reference

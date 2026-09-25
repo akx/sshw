@@ -54,6 +54,15 @@ class ITermColorInterface(ColorInterface):
         os.write(1, b'\033]6;1;bg;*;default\a')
 
 
+class GhosttyColorInterface(ColorInterface):
+    def set_bg_color(self, rgb):
+        r, g, b = rgb
+        os.write(1, b'\033]11;rgb:%02x/%02x/%02x\033\\' % (r, g, b))
+
+    def restore_bg_color(self):
+        os.write(1, b'\033]111\033\\')
+
+
 def find_hostmap_match(user_host):
     if not os.path.isfile(hostmap_file):
         return
@@ -71,6 +80,8 @@ def find_hostmap_match(user_host):
 color_interface_class = ColorInterface
 if os.environ.get('TERM_PROGRAM') == 'iTerm.app':
     color_interface_class = ITermColorInterface
+elif os.environ.get('TERM_PROGRAM') == 'ghostty' or os.environ.get('TERM') == 'xterm-ghostty':
+    color_interface_class = GhosttyColorInterface
 is_tty = bool(os.isatty(1))
 default_color = parse_color(os.environ.get('SSHW_DEFAULT_BG') or '25,25,25')
 hostmap_file = os.path.expanduser(os.path.expandvars(os.environ.get('SSHW_HOSTMAP') or '~/.sshw_hosts'))
